@@ -47,6 +47,7 @@ type Order struct {
 	To          string      `json:"to"`
 }
 
+
 type ShippedItem struct {
 	PartNumber   string `json:"partNumber"`
 	SerialNumber string `json:"serialNumber"`

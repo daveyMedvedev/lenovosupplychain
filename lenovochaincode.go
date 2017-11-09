@@ -141,7 +141,7 @@ func createShipment(stub shim.ChaincodeStubInterface, args []string) pb.Response
 	// Query and Retrieve the Full BaicInfo
 	keys := []string{shipment.ShipmentNumber}
 
-	objectType := "PO"
+	objectType := "SHP"
 	Avalbytes, err = dbapi.QueryObject(stub, objectType, keys)
 	if err != nil {
 		return shim.Error("CreateShipment() : Failed to query shipment object")
@@ -260,7 +260,7 @@ func createReturnNotice(stub shim.ChaincodeStubInterface, args []string) pb.Resp
 	// Query and Retrieve the Full BaicInfo
 	keys := []string{ReturnNotice.PONumber}
 
-	objectType := "return"
+	objectType := "RET"
 	Avalbytes, err = dbapi.QueryObject(stub, objectType, keys)
 	if err != nil {
 		return shim.Error("CreateReturnNotice() : Failed to query return order object")
@@ -292,10 +292,10 @@ func createInvoice(stub shim.ChaincodeStubInterface, args []string) pb.Response 
 	// Query and Retrieve the Full BaicInfo
 	keys := []string{Invoice.PONumber}
 
-	objectType := "invoice"
+	objectType := "INV"
 	Avalbytes, err = dbapi.QueryObject(stub, objectType, keys)
 	if err != nil {
-		return shim.Error("CreateInvoice() : Failed to query shipment object")
+		return shim.Error("CreateInvoice() : Failed to query invoice")
 	}
 
 	if Avalbytes != nil {
