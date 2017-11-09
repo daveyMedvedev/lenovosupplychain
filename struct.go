@@ -39,22 +39,14 @@ type UnitOfMeasure struct {
 }
 
 type Order struct {
-<<<<<<< HEAD
-	OrderNumber string      `json:"orderNumber"`
+	OrderNumber string      `json:"poNumber"`
 	SupplierID  string      `json:"supplerId"`
 	Items       []OrderItem `json:"items"`
 	AuditInfo   AuditInfo   `json:"auditInfo"`
-}
-=======
-	OrderNumber   string           `json:"poNumber"`
-	SupplierID string              `json:"supplerId"`
-	Items      []OrderItem 		   `json:"items"`
-	AuditInfo  AuditInfo           `json:"auditInfo"`
-	From  string `json:from"`
-	To  string `json:to"`
+	From        string      `json:"from"`
+	To          string      `json:"to"`
 }
 
->>>>>>> 838e8c94490a46b56e7899080dbd41029db23719
 
 type ShippedItem struct {
 	PartNumber   string `json:"partNumber"`
@@ -87,29 +79,17 @@ type RecievedItem struct {
 	ReceivingStatus string `json:"receivingStatus"`
 }
 
-<<<<<<< HEAD
-type ACK struct {
-	PONumber   string `json:"poNumber"`
-=======
 type Acknowledgement struct {
-	PONumber string `json:"poNumber"`
->>>>>>> 838e8c94490a46b56e7899080dbd41029db23719
+	PONumber   string `json:"poNumber"`
 	SupplierID string `json:"supplierId"`
 }
 
 type POInvoice struct {
-<<<<<<< HEAD
 	PONumber string      `json:"poNumber"`
 	Items    []OrderItem `json:"items"`
 }
-=======
-	PONumber string `json:"poNumber"`
-	Items      []OrderItem `json:"items"`
-}
-
 
 type ReturnNotice struct {
-	PONumber string `json:"poNumber"`
-	Items      []OrderItem `json:"items"`
+	PONumber string      `json:"poNumber"`
+	Items    []OrderItem `json:"items"`
 }
->>>>>>> 838e8c94490a46b56e7899080dbd41029db23719
