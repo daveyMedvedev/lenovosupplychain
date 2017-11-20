@@ -93,6 +93,9 @@ func checkItemDetails(poOrderItems []ItemDetails, soOrderItems []ItemDetails) (b
 		fmt.Println(orderedquantity[i.CommodityCode])
 	}
 	for _, j := range soOrderItems {
+		if len(orderedquantity[j.CommodityCode]) < 2 {
+			return false, fmt.Errorf("Part number : " + j.CommodityCode + " missing mandatory field(s): orderedQuantity/uom")
+		}
 		if quantity := orderedquantity[j.CommodityCode][0]; quantity != j.OrderedQuantity {
 			return false, fmt.Errorf("Part number : " + j.CommodityCode + " invalid quantity " + quantity)
 		}
@@ -111,12 +114,10 @@ func checkShipDetails(soOrderItems []ItemDetails, Shipment []ShippedItem) (bool,
 	for _, i := range soOrderItems {
 		orderedquantity[i.CommodityCode] = i.OrderedQuantity
 		//orderedquantity[i.CommodityCode] = append(orderedquantity[i.CommodityCode], i.UOM)
-		fmt.Println(i.OrderedQuantity)
+
 	}
 	for _, j := range Shipment {
-		fmt.Println(orderedquantity[j.CommodityCode])
 		if quantity := orderedquantity[j.CommodityCode]; quantity != j.OrderedQuantity {
-
 			return false, fmt.Errorf("Part number : " + j.CommodityCode + " invalid quantity " + quantity)
 		}
 		//	if uom := orderedquantity[j.CommodityCode][1]; uom != j.UOM {
@@ -124,5 +125,27 @@ func checkShipDetails(soOrderItems []ItemDetails, Shipment []ShippedItem) (bool,
 		//}
 	}
 
+	return true, nil
+}
+
+//TODO FAILS AT STRING ARRAY
+func checkReceivedDetails(receivedItems []ReceivedItem, shipmentItems []ShippedItem) (bool, error) {
+	receivedquantity := make(map[string][]string)
+	for _, i := range shipmentItems {
+		receivedquantity[i.CommodityCode] = append(receivedquantity[i.CommodityCode], i.OrderedQuantity)
+		receivedquantity[i.CommodityCode] = append(receivedquantity[i.CommodityCode], i.UOM)
+	}
+	for _, j := range receivedItems {
+		if len(receivedquantity[j.CommodityCode]) < 2 {
+			return false, fmt.Errorf("Part number : " + j.CommodityCode + " missing mandatory field(s): orderedQuantity/uom")
+		}
+		if quantity := receivedquantity[j.CommodityCode][0]; quantity != j.DeliveredQuantity {
+			return false, fmt.Errorf("Part number : " + j.CommodityCode + " invalid quantity " + quantity)
+		}
+		if uom := receivedquantity[j.CommodityCode][1]; uom != j.UOM {
+			return false, fmt.Errorf("Part number : " + j.CommodityCode + " invalid uom " + uom)
+		}
+	}
+	fmt.Println("We ended here...")
 	return true, nil
 }

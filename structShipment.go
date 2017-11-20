@@ -3,8 +3,8 @@ package main
 type ShippedItem struct {
 	CommodityCode   string `json:"commoditycode"`
 	SerialNumber    string `json:"serialNumber"`
+	OrderedQuantity string `json:"orderedQuantity"`
 	UOM             string `json:"uom"`
-	OrderedQuantity string `json:"ordredQuantity"`
 }
 
 type Shipment struct {

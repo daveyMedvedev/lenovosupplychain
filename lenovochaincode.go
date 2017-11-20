@@ -86,6 +86,7 @@ const (
 	CSP  string = "createShipment"
 	CACK string = "createAcknowledgement"
 	CI   string = "createInvoice"
+	CGR  string = "createGoodsReceived"
 	SHPT string = "shipPart"
 	CUR  string = "createUser"
 	UUR  string = "updateUser"
@@ -109,6 +110,7 @@ func (t *LenovoChainCode) initMaps() {
 	t.funcMap[CSO] = createSalesOrder
 	t.funcMap[CACK] = createAcknowledgement
 	t.funcMap[CI] = createInvoice
+	t.funcMap[CGR] = createGoodsReceived
 	t.funcMap[SHPT] = shipPart
 	t.funcMap[QO] = queryOrder
 	t.funcMap[QOBN] = queryOrderByOrderNumber
@@ -166,18 +168,19 @@ func createShipment(stub shim.ChaincodeStubInterface, args []string) pb.Response
 	var Avalbytes []byte
 	var SOBytes []byte
 	Shipment := Shipment{}
+	var shipBytes []byte
+
 	SalesOrder := SalesOrder{}
 	funcName := getFunctionName()
 
 	if len(args) < 1 {
-		return shim.Error("Not enough parameters")
+		return shim.Error(funcName + " Not enough parameters")
 	}
 
-	fmt.Println("createShipment : Arguments : %s", args[0])
+	fmt.Println(funcName+" : Arguments : %s", args[0])
 
-	err = json.Unmarshal([]byte(args[0]), &Shipment)
-	if err != nil {
-		return shim.Error("Failed to unmarshal shipment. " + err.Error())
+	if err = json.Unmarshal([]byte(args[0]), &Shipment); err != nil {
+		return shim.Error(funcName + " Failed to unmarshal shipment. " + err.Error())
 	}
 
 	distributerID := Shipment.DistributorID
@@ -188,14 +191,12 @@ func createShipment(stub shim.ChaincodeStubInterface, args []string) pb.Response
 	shipkeys := []string{from, to, distributerID, shippingNumber}
 
 	objectType := "SHP"
-	Avalbytes, err = dbapi.QueryObject(stub, objectType, shipkeys)
-
-	if err != nil {
-		return shim.Error("Cannot access ledger " + err.Error())
+	if Avalbytes, err = dbapi.QueryObject(stub, objectType, shipkeys); err != nil {
+		return shim.Error(funcName + " Cannot access ledger " + err.Error())
 	}
 
 	if Avalbytes != nil {
-		return shim.Error("shipment already exists " + Shipment.ShipmentNumber)
+		return shim.Error(funcName + " shipment already exists " + Shipment.ShipmentNumber)
 	}
 
 	originalPONumber := Shipment.OrderNumber
@@ -205,18 +206,18 @@ func createShipment(stub shim.ChaincodeStubInterface, args []string) pb.Response
 	sokeys := []string{orderFrom, orderTo, originalPONumber}
 	objectType = "SO"
 	if SOBytes, err = dbapi.QueryObject(stub, objectType, sokeys); err != nil {
-		return shim.Error("Failed to retrieve Sales Order. ")
+		return shim.Error(funcName + " Failed to retrieve Sales Order. ")
 	}
 	if SOBytes == nil {
-		return shim.Error("sobytes has nothing. ")
+		return shim.Error(funcName + " sobytes has nothing. ")
 	}
 
 	if err = json.Unmarshal(SOBytes, &SalesOrder); err != nil {
-		return shim.Error("Failed to marshal Sales Order. " + string(SOBytes) + err.Error())
+		return shim.Error(funcName + " Failed to marshal Sales Order. " + string(SOBytes) + err.Error())
 	}
 
 	if len(SalesOrder.Items) != len(Shipment.ShippedItems) {
-		return shim.Error("***** Order quantity does not match shipping quantity. Changing order status to: pending review. *****")
+		return shim.Error(funcName + " Number of Shipped Lines and Order Lines do not match")
 	}
 
 	var linesMatch bool
@@ -234,6 +235,19 @@ func createShipment(stub shim.ChaincodeStubInterface, args []string) pb.Response
 	if err = dbapi.UpdateObject(stub, objectType, shipkeys, []byte(args[0])); err != nil {
 		logger.Errorf("createShipment : Error inserting Shipment of parts into LedgerState %s", err)
 		return shim.Error("createShipment : Shipping part failed")
+	}
+
+	/*TODO - REMOVE THIS!!!
+	 */
+	if shipBytes, err = dbapi.QueryObject(stub, objectType, shipkeys); err != nil {
+		return shim.Error(funcName + " Failed to retrieve Shipping Notice. ")
+	}
+	if shipBytes == nil {
+		return shim.Error(funcName + " empty Shipping Notice returned. ")
+	}
+	fmt.Println(funcName + ": " + string(shipBytes))
+	if err = json.Unmarshal(shipBytes, &Shipment); err != nil {
+		return shim.Error(funcName + " Failed to marshal Shipment Notice. " + err.Error())
 	}
 
 	return shim.Success(nil)
@@ -479,7 +493,77 @@ func createAcknowledgement(stub shim.ChaincodeStubInterface, args []string) pb.R
 	return shim.Success(nil)
 }
 
-func generateGoodsReceived(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func createGoodsReceived(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	//TODO: update order status to shipped -- check for acknowledged changed to shipped -- retrieve sales order -- instead PO to SO -- add check query shipment not yet
+	var err error
+	var Avalbytes []byte
+	var shipBytes []byte
+	shipment := Shipment{}
+	goodsReceived := GoodsReceivedNotice{}
+	funcName := getFunctionName()
+
+	if len(args) < 1 {
+		return shim.Error(funcName + " Not enough parameters")
+	}
+
+	fmt.Println(funcName+" : Arguments : %s", args[0])
+
+	if err = json.Unmarshal([]byte(args[0]), &goodsReceived); err != nil {
+		return shim.Error(funcName + " Failed to unmarshal goods received. " + err.Error())
+	}
+
+	distributerID := goodsReceived.DistributorID
+	to := goodsReceived.To
+	receiveNumber := goodsReceived.GoodsReceivedNumber
+	from := goodsReceived.From
+
+	shipkeys := []string{from, to, distributerID, receiveNumber}
+
+	objectType := "GRN"
+	if Avalbytes, err = dbapi.QueryObject(stub, objectType, shipkeys); err != nil {
+		return shim.Error(funcName + " Cannot access ledger " + err.Error())
+	}
+
+	if Avalbytes != nil {
+		return shim.Error(funcName + " goods received noitice already exists " + goodsReceived.GoodsReceivedNumber)
+	}
+
+	originalShipNumber := goodsReceived.ShipmentNumber
+	shipFrom := goodsReceived.To
+	shipTo := goodsReceived.From //supplier
+	distributorId := goodsReceived.DistributorID
+	shipkeys = []string{shipFrom, shipTo, distributorId, originalShipNumber}
+	objectType = "SHP"
+	if shipBytes, err = dbapi.QueryObject(stub, objectType, shipkeys); err != nil {
+		return shim.Error(funcName + " Failed to retrieve Shipping Notice. ")
+	}
+	if shipBytes == nil {
+		return shim.Error(funcName + " empty Shipping Notice returned. ")
+	}
+	fmt.Println(funcName + ": " + string(shipBytes))
+	if err = json.Unmarshal(shipBytes, &shipment); err != nil {
+		return shim.Error(funcName + " Failed to marshal Shipment Notice. " + err.Error())
+	}
+
+	if len(goodsReceived.ReceivedItems) != len(shipment.ShippedItems) {
+		return shim.Error(funcName + " Number of Shipped Lines and Received Lines do not match")
+	}
+
+	var linesMatch bool
+
+	if linesMatch, err = checkReceivedDetails(goodsReceived.ReceivedItems, shipment.ShippedItems); err != nil || !linesMatch {
+		return shim.Error(funcName + " : Shipment " + shipment.ShipmentNumber + " : " + err.Error())
+	}
+
+	/*If the incoming Status  of the new Purchase Order is not OPEN, then reset it to OPEN */
+	// TODO: Add code to retrieve and update the original SO/PO
+
+	objectType = "GRN"
+	if err = dbapi.UpdateObject(stub, objectType, shipkeys, []byte(args[0])); err != nil {
+		logger.Errorf(funcName+": Error inserting Shipment of parts into LedgerState %s", err)
+		return shim.Error(funcName + ": Shipping part failed")
+	}
+
 	return shim.Success(nil)
 }
 

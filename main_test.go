@@ -198,6 +198,43 @@ func TestSCM_invoke_createShipment(t *testing.T) {
 
 }
 
+func TestSCM_invoke_createGoodsReceived(t *testing.T) {
+	lcc := new(LenovoChainCode)
+	stub := shim.NewMockStub("ldm", lcc)
+
+	// Init cc_version=v0
+	checkInit(t, stub, [][]byte{[]byte("init"), []byte("v0")})
+
+	// create the Purchase order (status open)
+	checkInvoke(t, stub, [][]byte{[]byte("createPurchaseOrder"), purchaseOrderPayload})
+
+	// query the purchase order (queryOrder) and check status
+	checkQuery(t, stub, "queryOrder", purchaseOrderQueryPayload, purchaseQueryResponse1)
+
+	//Create the acknowledgement of the Purchase order
+	checkInvoke(t, stub, [][]byte{[]byte("createAcknowledgement"), ackPayload})
+
+	// check the purchase order (status acknowledged)
+	checkQuery(t, stub, "queryOrder", purchaseOrderAckQuery, purchaseOrderAckResponse)
+
+	//create Sales  order (status open)
+	checkInvoke(t, stub, [][]byte{[]byte("createSalesOrder"), salesOrderPayload})
+
+	//query Sales order
+	checkQuery(t, stub, "queryOrder", salesOrderQuery, salesOrderQueryResponse)
+
+	//Invoke the createShipment function
+	checkInvoke(t, stub, [][]byte{[]byte("createShipment"), shipmentPayload})
+
+	//Query the shipmentPayload
+	checkQuery(t, stub, "queryShipment", shipmentQuery, shipmentQueryResponse)
+
+	//Send the Goods Revieved
+	//Invoke the createShipment function
+	checkInvoke(t, stub, [][]byte{[]byte("createGoodsReceived"), goodsPayload})
+
+}
+
 // func TestSDM_invoke_updateSupplier(t *testing.T) {
 // 	scc := new(SDMChaincode)
 // 	stub := shim.NewMockStub("sdm", scc)
