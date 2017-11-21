@@ -11,11 +11,25 @@ type QueryOrder struct {
 	DocType     string `json:"docType"`
 }
 
+type QueryInvoice struct {
+	InvoiceNumber string `json:"invoiceNumber"`
+	Requestor     string `json:"requestor"`
+	Partner       string `json:"partner"`
+	DocType       string `json:"docType"`
+}
+
 type QueryShipment struct {
 	ShipmentNumber string `json:"shipmentNumber"`
 	Requestor      string `json:"requestor"`
 	Partner        string `json:"partner"`
 	DistributorID  string `json:"distributorId"`
+}
+
+type QueryPayment struct {
+	PaymentNumber string `json:"paymentNumber"`
+	Requestor     string `json:"requestor"`
+	Partner       string `json:"partner"`
+	DistributorID string `json:"distributorId"`
 }
 
 type QueryField struct {

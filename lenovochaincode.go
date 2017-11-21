@@ -87,6 +87,7 @@ const (
 	CACK string = "createAcknowledgement"
 	CI   string = "createInvoice"
 	CGR  string = "createGoodsReceived"
+	CPY  string = "createPayment"
 	SHPT string = "shipPart"
 	CUR  string = "createUser"
 	UUR  string = "updateUser"
@@ -98,6 +99,8 @@ const (
 	QS   string = "queryShipment"
 	QAPO string = "queryAllPurchaseOrders"
 	QASO string = "queryAllSalesOrders"
+	QINV string = "queryInvoice"
+	QPYT string = "queryPayment"
 )
 
 func (t *LenovoChainCode) initMaps() {
@@ -111,6 +114,7 @@ func (t *LenovoChainCode) initMaps() {
 	t.funcMap[CACK] = createAcknowledgement
 	t.funcMap[CI] = createInvoice
 	t.funcMap[CGR] = createGoodsReceived
+	t.funcMap[CPY] = createPayment
 	t.funcMap[SHPT] = shipPart
 	t.funcMap[QO] = queryOrder
 	t.funcMap[QOBN] = queryOrderByOrderNumber
@@ -118,6 +122,8 @@ func (t *LenovoChainCode) initMaps() {
 	t.funcMap[QS] = queryShipment
 	t.funcMap[QASO] = queryAllSalesOrders
 	t.funcMap[QAPO] = queryAllPurchaseOrders
+	t.funcMap[QINV] = queryInvoice
+	t.funcMap[QPYT] = queryPayment
 	//	t.funcMap[CUR] = CreateUser
 	//	t.funcMap[UUR] = UpdateUser
 	//	t.funcMap[QUR] = QueryUser
@@ -615,9 +621,9 @@ func createInvoice(stub shim.ChaincodeStubInterface, args []string) pb.Response 
 
 	var objectType = "INV"
 	// Query and Retrieve an existing Invoice
-	keys := []string{invoice.From, invoice.To, invoice.InvoiceNumber}
+	invoiceKeys := []string{invoice.From, invoice.To, invoice.InvoiceNumber}
 	//Error if we receive bytes or generate an error (no object is not an error)
-	if Avalbytes, err = dbapi.QueryObject(stub, objectType, keys); err != nil || Avalbytes != nil {
+	if Avalbytes, err = dbapi.QueryObject(stub, objectType, invoiceKeys); err != nil || Avalbytes != nil {
 		return shim.Error(funcName + " : Invoice with number " + invoice.InvoiceNumber + " already exists")
 	}
 
@@ -625,9 +631,9 @@ func createInvoice(stub shim.ChaincodeStubInterface, args []string) pb.Response 
 	case "PO":
 		var purchaseOrder = PurchaseOrder{}
 		objectType = "PO"
-		keys = []string{invoice.To, invoice.From, invoice.OriginalOrderNumber}
+		keys := []string{invoice.To, invoice.From, invoice.OriginalOrderNumber}
 
-		if Avalbytes, err = dbapi.QueryObject(stub, objectType, keys); err != nil || Avalbytes != nil {
+		if Avalbytes, err = dbapi.QueryObject(stub, objectType, keys); err != nil || Avalbytes == nil {
 			return shim.Error(funcName + " : Invoice cannot find original purchase order " + invoice.OriginalOrderNumber)
 		}
 
@@ -643,12 +649,25 @@ func createInvoice(stub shim.ChaincodeStubInterface, args []string) pb.Response 
 		Total check and update the invoicedquantity/value
 		of original order
 		 =========================================*/
+		if linesMatch, err := checkItemDetails(purchaseOrder.Items, invoice.Items); err != nil || !linesMatch {
+			return shim.Error(funcName + " : Error checking items " + err.Error())
+		}
+
+		if totalsMatch := checkItemDetailsTotal(invoice.Items, purchaseOrder.OrderTotal, invoice.InvoiceAmount); !totalsMatch {
+			return shim.Error(funcName + " : Purchase Order Total and Invoice Total mismatch " + err.Error())
+		}
+		objectType = "INV"
+		if err = dbapi.UpdateObject(stub, objectType, invoiceKeys, []byte(args[0])); err != nil {
+			return shim.Error(funcName + " : Invoice Create failed")
+		}
+
 	case "SO":
 		var salesOrder = SalesOrder{}
 		objectType = "SO"
-		keys = []string{invoice.To, invoice.From, invoice.OriginalOrderNumber}
-		if Avalbytes, err = dbapi.QueryObject(stub, objectType, keys); err != nil || Avalbytes != nil {
-			return shim.Error(funcName + " : Invoice cannot find original purchase order " + invoice.OriginalOrderNumber)
+		keys := []string{invoice.To, invoice.From, invoice.OriginalOrderNumber}
+		fmt.Println("Checking Sales Order")
+		if Avalbytes, err = dbapi.QueryObject(stub, objectType, keys); err != nil || Avalbytes == nil {
+			return shim.Error(funcName + " : Invoice cannot find original sales order " + invoice.OriginalOrderNumber)
 		}
 
 		if err = json.Unmarshal(Avalbytes, &salesOrder); err != nil {
@@ -659,12 +678,23 @@ func createInvoice(stub shim.ChaincodeStubInterface, args []string) pb.Response 
 		   Total check and update the invoicedquantity/value
 		   of original order
 			=========================================*/
+		if linesMatch, err := checkItemDetails(salesOrder.Items, invoice.Items); err != nil || !linesMatch {
+			return shim.Error(funcName + " : Error checking items " + err.Error())
+		}
+
+		if totalsMatch := checkItemDetailsTotal(invoice.Items, salesOrder.OrderTotal, invoice.InvoiceAmount); !totalsMatch {
+			return shim.Error(funcName + " : Sales Order Total and Invoice Total mismatch ")
+		}
+		objectType = "INV"
+		if err = dbapi.UpdateObject(stub, objectType, invoiceKeys, []byte(args[0])); err != nil {
+			return shim.Error(funcName + " : Invoice Create failed")
+		}
 
 	default:
 		return shim.Error(funcName + " : Invoice for document type " + invoice.OriginalOrderType + " not yet implemented")
 	}
 
-	if err = dbapi.UpdateObject(stub, objectType, keys, []byte(args[0])); err != nil {
+	if err = dbapi.UpdateObject(stub, objectType, invoiceKeys, []byte(args[0])); err != nil {
 		logger.Errorf(funcName+" : Error inserting Object into LedgerState %s", err)
 		return shim.Error(funcName + " : Invoice Create failed")
 	}
@@ -689,7 +719,10 @@ func createPayment(stub shim.ChaincodeStubInterface, args []string) pb.Response 
 	objectType := "INV"
 	keys := []string{payment.To, payment.From, payment.InvoiceNumber}
 
-	if invBytes, err = dbapi.QueryObject(stub, objectType, keys); err != nil || invBytes != nil {
+	if invBytes, err = dbapi.QueryObject(stub, objectType, keys); err != nil || invBytes == nil {
+		if err != nil {
+			fmt.Print("Error  : " + err.Error())
+		}
 		return shim.Error(funcName + " : cannot find original Invoice " + payment.InvoiceNumber)
 	}
 
@@ -698,7 +731,14 @@ func createPayment(stub shim.ChaincodeStubInterface, args []string) pb.Response 
 	}
 
 	if payment.InvoiceNumber != invoice.InvoiceNumber || payment.Remittance != invoice.InvoiceAmount {
-		return shim.Error(funcName + " :Invoice details do not match Payment details")
+		return shim.Error(funcName + " :Invoice  number do not match Payment invoice number")
+	}
+	objectType = "PYT"
+	keys = []string{payment.From, payment.To, payment.PaymentNumber}
+	fmt.Println("Payment " + keys[0])
+	if err = dbapi.UpdateObject(stub, objectType, keys, []byte(args[0])); err != nil {
+		logger.Errorf(funcName+" : Error inserting Payment into LedgerState %s", err)
+		return shim.Error(funcName + " : Payment Create failed")
 	}
 
 	return shim.Success(nil)
@@ -916,6 +956,50 @@ func queryShipment(stub shim.ChaincodeStubInterface, args []string) pb.Response 
 	return shim.Success(Shipmentbytes)
 }
 
+func queryInvoice(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	var err error
+	var Invoicebytes []byte
+	var query = QueryInvoice{}
+	funcName := getFunctionName()
+
+	if len(args) < 1 {
+		return shim.Error(funcName + " :requires request parameter")
+	}
+	if err = json.Unmarshal([]byte(args[0]), &query); err != nil {
+		logger.Infof(funcName+" : Arguments : %s", args[0])
+	}
+	fmt.Println("Query Invoice")
+	keys := []string{query.Requestor, query.Partner, query.InvoiceNumber}
+	if Invoicebytes, err = dbapi.QueryObject(stub, "INV", keys); err != nil {
+		logger.Infof(funcName+" :fail to retrieve Invoice (invoice number: %s, company %s )", query.InvoiceNumber, query.Partner)
+		return shim.Error(funcName + " :fail to retrieve shipment")
+	}
+
+	return shim.Success(Invoicebytes)
+}
+
+func queryPayment(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	var err error
+	var Invoicebytes []byte
+	var query = QueryPayment{}
+	funcName := getFunctionName()
+
+	if len(args) < 1 {
+		return shim.Error(funcName + " :requires request parameter")
+	}
+	if err = json.Unmarshal([]byte(args[0]), &query); err != nil {
+		logger.Infof(funcName+" : Arguments : %s", args[0])
+	}
+	fmt.Println("Query Invoice")
+	keys := []string{query.Requestor, query.Partner, query.PaymentNumber}
+	if Invoicebytes, err = dbapi.QueryObject(stub, "PYT", keys); err != nil {
+		logger.Infof(funcName+" :fail to retrieve Payment (payment number: %s, company %s )", query.PaymentNumber, query.Partner)
+		return shim.Error(funcName + " :fail to retrieve shipment")
+	}
+
+	return shim.Success(Invoicebytes)
+}
+
 ////////////////////////////////////////////////////////////////////////////
 //  Rich query for all PurchaseOrders
 ////////////////////////////////////////////////////////////////////////////
@@ -957,7 +1041,7 @@ func queryRichQuery(stub shim.ChaincodeStubInterface, args []string) pb.Response
 }
 
 ////////////////////////////////////////////////////////////////////////////
-//Query by selector (rich query!)
+//Query Invoices
 ////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////

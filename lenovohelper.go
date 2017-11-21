@@ -60,14 +60,16 @@ func retrieveAndMarshalSOObject(stub shim.ChaincodeStubInterface, args []string)
 
 }
 
-func checkItemDetailsTotal(items []ItemDetails, orderTotal string) bool {
+func checkItemDetailsTotal(items []ItemDetails, orderTotal string, invoiceAmount string) bool {
 	var total float64
 	var tempFloat float64
 	var orderTotalFloat float64
+	var invoiceTotalFloat float64
 	var err error
 
 	for _, i := range items {
 		if tempFloat, err = strconv.ParseFloat(i.OrderedValue, 64); err != nil {
+			fmt.Println("Problem" + err.Error())
 			return false
 		}
 		total = total + tempFloat
@@ -75,7 +77,10 @@ func checkItemDetailsTotal(items []ItemDetails, orderTotal string) bool {
 	if orderTotalFloat, err = strconv.ParseFloat(orderTotal, 64); err != nil {
 		return false
 	}
-	if total != orderTotalFloat {
+	if invoiceTotalFloat, err = strconv.ParseFloat(invoiceAmount, 64); err != nil {
+		return false
+	}
+	if total != orderTotalFloat || total != invoiceTotalFloat {
 		return false
 	}
 	return true
@@ -103,7 +108,6 @@ func checkItemDetails(poOrderItems []ItemDetails, soOrderItems []ItemDetails) (b
 			return false, fmt.Errorf("Part number : " + j.CommodityCode + " invalid uom " + uom)
 		}
 	}
-
 	return true, nil
 }
 
@@ -146,6 +150,5 @@ func checkReceivedDetails(receivedItems []ReceivedItem, shipmentItems []ShippedI
 			return false, fmt.Errorf("Part number : " + j.CommodityCode + " invalid uom " + uom)
 		}
 	}
-	fmt.Println("We ended here...")
 	return true, nil
 }

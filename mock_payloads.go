@@ -54,3 +54,19 @@ var goodsPayload = []byte("{\"docType\": \"GRN\", \"goodsReceivedNumber\": \"987
 
 var goodsQuery = "{\"shipmentNumber\": \"4321\", \"requestor\": \"Manu1\", \"partner\": \"supid1\", \"distributorId\": \"Lenovo\"}"
 var goodsQueryResponse = "{\"shipmentNumber\": \"4321\",\"trackingnumber\": \"4567\", \"shippedItems\": [{\"commodityCode\":\"1234\",\"deliveredQuantity\":100, \"uom\": \"EA\"},{\"commodityCode\": \"1235\", \"deliveredQuantity\": 200, \"uom\": \"EA\"}], \"supplierId\": \"supid1\", \"orderNumber\": \"1234\", \"distributorId\": \"Lenovo\", \"from\": \"supid1\", \"to\": \"Manu1\"}"
+
+/*=======================================
+  Inovice Payloads (create/query)
+ =======================================*/
+var invoicePayloads = []byte("{\"docType\": \"INV\", \"invoiceNumber\": \"4848\", \"originalOrderNumber\":\"1234\",\"orginalOrderType\": \"SO\", \"originalShipNotice\": \"4321\", \"items\":[{\"commoditycode\":\"1234\",\"effectivedate\":\"\",\"unitprice\":\"12.50\",\"oldprice\":\"\",\"uom\":\"EA\",\"shorttext\":\"widget1\",\"orderedquantity\":\"100\",\"orderedvalue\":\"1250.00\",\"invoicedquantity\":\"\",\"invoicedvalue\":\"\",\"tobedeliveredvalue\":\"\",\"tobedeliveredquantity\":\"\"},{\"commoditycode\":\"1235\",\"effectivedate\":\"\",\"unitprice\":\"15.50\",\"oldprice\":\"\",\"uom\":\"EA\",\"shorttext\":\"widget2\",\"orderedquantity\":\"200\",\"orderedvalue\":\"1500.00\",\"invoicedquantity\":\"\",\"invoicedvalue\":\"\",\"tobedeliveredvalue\":\"\",\"tobedeliveredquantity\":\"\"}], \"invoiceAmount\": \"2750.00\", \"from\": \"supid1\", \"to\": \"Lenovo\"}")
+
+var invoiceQuery = "{\"invoiceNumber\": \"4848\", \"requestor\": \"supid1\", \"partner\": \"Lenovo\"}"
+var invoiceQueryResponse = "{\"docType\": \"INV\", \"invoiceNumber\": \"4848\", \"originalOrderNumber\":\"1234\",\"orginalOrderType\": \"SO\", \"originalShipNotice\": \"4321\", \"items\":[{\"commoditycode\":\"1234\",\"effectivedate\":\"\",\"unitprice\":\"12.50\",\"oldprice\":\"\",\"uom\":\"EA\",\"shorttext\":\"widget1\",\"orderedquantity\":\"100\",\"orderedvalue\":\"1250.00\",\"invoicedquantity\":\"\",\"invoicedvalue\":\"\",\"tobedeliveredvalue\":\"\",\"tobedeliveredquantity\":\"\"},{\"commoditycode\":\"1235\",\"effectivedate\":\"\",\"unitprice\":\"15.50\",\"oldprice\":\"\",\"uom\":\"EA\",\"shorttext\":\"widget2\",\"orderedquantity\":\"200\",\"orderedvalue\":\"1500.00\",\"invoicedquantity\":\"\",\"invoicedvalue\":\"\",\"tobedeliveredvalue\":\"\",\"tobedeliveredquantity\":\"\"}], \"invoiceAmount\": \"2750.00\", \"from\": \"supid1\", \"to\": \"Lenovo\"}"
+
+/*=======================================
+  Inovice Payloads (create/query)
+ =======================================*/
+var paymentPayloads = []byte("{\"docType\": \"PAY\", \"paymentNumber\": \"4949\", \"invoiceNumber\":\"4848\", \"remittance\": \"2750.00\", \"from\": \"Lenovo\", \"to\": \"supid1\"}")
+
+var paymentQuery = "{\"paymentNumber\": \"4949\", \"requestor\": \"Lenovo\", \"partner\": \"supid1\"}"
+var paymentQueryResponse = "{\"docType\": \"PAY\", \"paymentNumber\": \"4949\", \"invoiceNumber\":\"4848\", \"remittance\": \"2750.00\", \"from\": \"Lenovo\", \"to\": \"supid1\"}"
