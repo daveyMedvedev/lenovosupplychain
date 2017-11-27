@@ -9,6 +9,7 @@ type ReceivedItem struct {
 
 type GoodsReceivedNotice struct {
 	ObjectType          string         `json:"doctype"`
+	OriginalOrderType   string         `json:"originalOrderType"`
 	GoodsReceivedNumber string         `json:"goodsReceivedNumber"`
 	GoodsReceivedDate   string         `json:"goodsReceivedDate"`
 	ShipmentNumber      string         `json:"shipmentNumber"`

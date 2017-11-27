@@ -48,9 +48,9 @@ var shipmentQuery = "{\"shipmentNumber\": \"4321\", \"requestor\": \"supid1\", \
 var shipmentQueryResponse = "{\"shipmentNumber\": \"4321\",\"trackingnumber\": \"4567\", \"shippedItems\": [{\"commodityCode\":\"1234\",\"orderedQuantity\":\"100\", \"uom\": \"EA\"},{\"commodityCode\": \"1235\", \"orderedQuantity\": \"200\", \"uom\":\"EA\"}], \"supplierId\": \"supid1\", \"orderNumber\": \"1234\", \"distributorId\": \"Lenovo\", \"from\": \"supid1\", \"to\": \"Manu1\"}"
 
 /*=======================================
-  SHipment Payloads (create/query)
+  Goods Recieved Payloads (create/query)
  =======================================*/
-var goodsPayload = []byte("{\"docType\": \"GRN\", \"goodsReceivedNumber\": \"9876\", \"goodsReceivedDate\":\"10/10/2017\",\"shipmentNumber\": \"4321\", \"distributorId\": \"Lenovo\", \"receivedItems\": [{\"commodityCode\":\"1234\",\"deliveredQuantity\": \"100\",\"uom\": \"EA\"},{\"commodityCode\": \"1235\", \"deliveredQuantity\": \"200\",\"uom\": \"EA\"}], \"orderNumber\": \"1234\", \"distributorId\": \"Lenovo\", \"from\": \"Manu1\", \"to\": \"supid1\"}")
+var goodsPayload = []byte("{\"docType\": \"GRN\",\"originalOrderType\":\"PO\", \"goodsReceivedNumber\": \"1234\", \"goodsReceivedDate\":\"10/10/2017\",\"shipmentNumber\": \"4321\", \"distributorId\": \"Lenovo\", \"receivedItems\": [{\"commodityCode\":\"1234\",\"deliveredQuantity\": \"100\",\"uom\": \"EA\"},{\"commodityCode\": \"1235\", \"deliveredQuantity\": \"200\",\"uom\": \"EA\"}], \"orderNumber\": \"1234\", \"distributorId\": \"Lenovo\", \"from\": \"Manu1\", \"to\": \"supid1\"}")
 
 var goodsQuery = "{\"shipmentNumber\": \"4321\", \"requestor\": \"Manu1\", \"partner\": \"supid1\", \"distributorId\": \"Lenovo\"}"
 var goodsQueryResponse = "{\"shipmentNumber\": \"4321\",\"trackingnumber\": \"4567\", \"shippedItems\": [{\"commodityCode\":\"1234\",\"deliveredQuantity\":100, \"uom\": \"EA\"},{\"commodityCode\": \"1235\", \"deliveredQuantity\": 200, \"uom\": \"EA\"}], \"supplierId\": \"supid1\", \"orderNumber\": \"1234\", \"distributorId\": \"Lenovo\", \"from\": \"supid1\", \"to\": \"Manu1\"}"

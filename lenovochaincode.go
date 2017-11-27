@@ -560,9 +560,18 @@ func createGoodsReceived(stub shim.ChaincodeStubInterface, args []string) pb.Res
 	if linesMatch, err = checkReceivedDetails(goodsReceived.ReceivedItems, shipment.ShippedItems); err != nil || !linesMatch {
 		return shim.Error(funcName + " : Shipment " + shipment.ShipmentNumber + " : " + err.Error())
 	}
+	//TODO
+	var salesOrder = SalesOrder{}
+	objectType = "SO"
+	keys := []string{shipment.DistributorID, shipment.From, shipment.OrderNumber}
+	fmt.Println("Checking Sales Order")
+	if Avalbytes, err = dbapi.QueryObject(stub, objectType, keys); err != nil || Avalbytes == nil {
+		return shim.Error(funcName + " : Invoice cannot find original sales order " + shipment.OrderNumber)
+	}
 
-	/*If the incoming Status  of the new Purchase Order is not OPEN, then reset it to OPEN */
-	// TODO: Add code to retrieve and update the original SO/PO
+	if err = json.Unmarshal(Avalbytes, &salesOrder); err != nil {
+		return shim.Error(funcName + " :Failed to convert original order  : " + err.Error())
+	}
 
 	objectType = "GRN"
 	if err = dbapi.UpdateObject(stub, objectType, shipkeys, []byte(args[0])); err != nil {
@@ -584,7 +593,7 @@ func createReturnNotice(stub shim.ChaincodeStubInterface, args []string) pb.Resp
 		return shim.Error(funcName + " :Failed to convert arg[0] to a Return notice: " + err.Error())
 	}
 
-	// Query and Retrieve the Full BaicInfo
+	// Query and Retrieve the Full BasicInfo
 	keys := []string{returnNotice.OrderNumber}
 
 	objectType := "return"
